@@ -1,0 +1,9 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.alibolt.journal",
+        "sha256_cert_fingerprints": ["B0:85:DA:41:2F:F3:7A:7A:5F:21:98:45:3C:0C:BE:87:D7:99:B2:2E:56:78:9D:85:4E:D3:95:12:30:7A:8B:E8"]
+      }
+    }]
+
