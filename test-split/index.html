@@ -6490,13 +6490,16 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
   .fin-section-body { margin-top: 4px; }
   .fin-section-body.fin-section-collapsed { display: block; }
   .fin-section-arrow { display: none; }
-  .fin-tabs { display: flex; gap: 2px; margin: 2px 0 14px; border-bottom: 1px solid var(--border); }
-  .fin-tab { flex: 1; background: none; border: none; padding: 9px 2px 10px; margin: 0; cursor: pointer;
-    color: var(--muted); font-size: 12px; font-weight: 600; font-family: inherit; border-bottom: 2px solid transparent;
-    margin-bottom: -1px; }
+  .fin-tabs { display: flex; gap: 2px; margin: 2px 0 14px; border-bottom: 1px solid var(--border); overflow-x: auto; }
+  .fin-tab { flex: 1 1 0; min-width: 0; background: none; border: none; padding: 8px 2px 9px; margin: 0; cursor: pointer;
+    color: var(--muted); font-size: 10.5px; font-weight: 600; font-family: inherit; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; display: flex; flex-direction: column; align-items: center; gap: 3px; white-space: nowrap; }
+  .fin-tab svg { width: 16px; height: 16px; stroke: currentColor; flex-shrink: 0; }
   .fin-tab.fin-tab-active { color: var(--accent-fixed); border-bottom-color: var(--accent-fixed); font-weight: 700; }
   .fin-section[data-fintab] { display: none; }
   .fin-section[data-fintab].fin-tab-active { display: block; }
+  #fexp-chart-card { background: var(--bg1); border: 1px solid var(--border); border-radius: 10px; padding: 10px 10px 4px; margin: 10px 0 12px; }
+  #fexp-chart-card-title { font-size: 11.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
 
   /* ---- Expense tracker (fexp) ---- */
   #fexp-month-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
@@ -6538,7 +6541,7 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
   .fexp-card .fexp-card-value { font-size: 14px; font-weight: 700; color: var(--text); }
   .fexp-card.fexp-pos .fexp-card-value { color: #4CAF7D; }
   .fexp-card.fexp-neg .fexp-card-value { color: #D9534F; }
-  #fexp-chart { overflow-x: auto; margin: 10px 0 4px; padding-bottom: 2px; border-bottom: 1px solid var(--border); }
+  #fexp-chart { overflow-x: auto; margin: 0 0 8px; padding-bottom: 2px; }
   #fexp-chart svg { display: block; }
   #fexp-chart-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
   #fexp-chart-legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--muted); }
@@ -6546,7 +6549,7 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
   #fexp-chart-legend span.leg-budget::before { background: #4CAF7D; }
   #fexp-chart-legend span.leg-spend::before { background: #D9534F; }
   #fexp-chart-legend span.leg-remain::before { background: #F0C929; }
-  #fexp-chart-info { background: var(--bg1); border: 1px solid var(--border); border-radius: 8px;
+  #fexp-chart-info { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
     padding: 7px 10px; font-size: 11.5px; color: var(--muted); margin-bottom: 10px; }
   .fexp-pt { cursor: pointer; }
   #fexp-cal-wrap { margin-top: 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
@@ -6843,12 +6846,30 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
   <h2>💰 مدیریت مالی</h2>
 
   <div class="fin-tabs" id="fin-tabs">
-    <button type="button" class="fin-tab fin-tab-active" data-fintab="exp">هزینه‌ها</button>
-    <button type="button" class="fin-tab" data-fintab="sav">اهداف</button>
-    <button type="button" class="fin-tab" data-fintab="debt">بدهی</button>
-    <button type="button" class="fin-tab" data-fintab="csp">بودجه</button>
-    <button type="button" class="fin-tab" data-fintab="asl">دارایی</button>
-    <button type="button" class="fin-tab" data-fintab="inf">اثر تورمی</button>
+    <button type="button" class="fin-tab fin-tab-active" data-fintab="exp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M9 11h2"/></svg>
+      هزینه‌ها
+    </button>
+    <button type="button" class="fin-tab" data-fintab="sav">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2"/></svg>
+      اهداف
+    </button>
+    <button type="button" class="fin-tab" data-fintab="debt">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>
+      بدهی
+    </button>
+    <button type="button" class="fin-tab" data-fintab="csp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5a2 2 0 0 1 2-2h8l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z"/><path d="M14 3v6h6"/></svg>
+      بودجه
+    </button>
+    <button type="button" class="fin-tab" data-fintab="asl">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V9l7-6 7 6v12"/><path d="M9 21v-6h6v6"/></svg>
+      دارایی
+    </button>
+    <button type="button" class="fin-tab" data-fintab="inf">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+      اثر تورمی
+    </button>
   </div>
 
   <div class="fin-section fin-tab-active" data-fintab="exp">
@@ -6881,12 +6902,15 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
 
     <div class="fexp-cards" id="fexp-cards"></div>
 
-    <div id="fexp-chart"></div>
-    <div id="fexp-chart-info">روی یکی از نقطه‌های نمودار بزن تا مقدارش رو ببینی.</div>
-    <div id="fexp-chart-legend">
-      <span class="leg-budget">سهم روزانه</span>
-      <span class="leg-spend">خرج روزانه</span>
-      <span class="leg-remain">باقی‌مانده روزانه</span>
+    <div id="fexp-chart-card">
+      <div id="fexp-chart-card-title">📈 نمودار روزانه</div>
+      <div id="fexp-chart"></div>
+      <div id="fexp-chart-info">روی یکی از نقطه‌های نمودار بزن تا مقدارش رو ببینی.</div>
+      <div id="fexp-chart-legend">
+        <span class="leg-budget">سهم روزانه</span>
+        <span class="leg-spend">خرج روزانه</span>
+        <span class="leg-remain">باقی‌مانده روزانه</span>
+      </div>
     </div>
 
     <div id="fexp-donut-wrap">
