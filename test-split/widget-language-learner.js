@@ -5,6 +5,8 @@
   var DIRECTION_KEY = "lang-direction";
   var ALLMODE_KEY = "lang-allmode";
   var NOTES_KEY = "lang-notes";
+  var DRILLS_KEY = "lang-drills";
+  var FREENOTE_KEY = "lang-freenote";
   var DEFAULT_INTERVALS = [1, 3, 7, 16, 30]; // منحنی فراموشی، هماهنگ با بخش برنامه‌ریزی دروس
   var INTERVALS = DEFAULT_INTERVALS.slice();
   var confirmDeleteWords = true;
@@ -15,6 +17,10 @@
   var fab = document.getElementById("lang-fab");
   var words = [];
   var notes = [];
+  var drills = []; // تمرین‌های نوشتاری روزانه: { id, text, target, log: { "YYYY-MM-DD": count } }
+  var freenoteText = "";
+  var freenoteSaveTimer = null;
+  var currentDrillSession = null;
   var reviewQueue = [];
   var currentReview = null;
 
@@ -99,6 +105,26 @@
   function saveNotes(cb) {
     if (!window.storage || !window.storage.set) { if (cb) cb(); return; }
     window.storage.set(NOTES_KEY, JSON.stringify(notes), false).then(function () { if (cb) cb(); }).catch(function () {});
+  }
+  function loadDrills(cb) {
+    if (!window.storage || !window.storage.get) { cb([]); return; }
+    window.storage.get(DRILLS_KEY, false).then(function (r) {
+      cb(r && r.value ? JSON.parse(r.value) : []);
+    }).catch(function () { cb([]); });
+  }
+  function saveDrills(cb) {
+    if (!window.storage || !window.storage.set) { if (cb) cb(); return; }
+    window.storage.set(DRILLS_KEY, JSON.stringify(drills), false).then(function () { if (cb) cb(); }).catch(function () {});
+  }
+  function loadFreenote(cb) {
+    if (!window.storage || !window.storage.get) { cb(""); return; }
+    window.storage.get(FREENOTE_KEY, false).then(function (r) {
+      cb(r && r.value != null ? r.value : "");
+    }).catch(function () { cb(""); });
+  }
+  function saveFreenote(cb) {
+    if (!window.storage || !window.storage.set) { if (cb) cb(); return; }
+    window.storage.set(FREENOTE_KEY, freenoteText, false).then(function () { if (cb) cb(); }).catch(function () {});
   }
   function loadIntervals(cb) {
     if (!window.storage || !window.storage.get) { cb(DEFAULT_INTERVALS.slice()); return; }
@@ -350,6 +376,98 @@
       row.appendChild(del);
       box.appendChild(row);
     });
+  }
+
+  function normalizeDrillText(s) { return (s || "").replace(/\s+/g, " ").trim(); }
+
+  function renderDrillList() {
+    var box = document.getElementById("lang-drill-list");
+    if (!box) return;
+    if (!drills.length) { box.innerHTML = '<div class="lang-empty">هنوز تمرین نوشتاری اضافه نکردی.</div>'; return; }
+    var today = todayStr();
+    box.innerHTML = "";
+    drills.forEach(function (d) {
+      var count = (d.log && d.log[today]) || 0;
+      var target = d.target || 1;
+      var pct = Math.min(100, Math.round((count / target) * 100));
+      var done = count >= target;
+      var row = document.createElement("div");
+      row.className = "lang-drill-row";
+      row.innerHTML =
+        '<div class="lang-drill-text">' + d.text.replace(/</g, "&lt;").replace(/\n/g, "<br>") + '</div>' +
+        '<div class="lang-drill-meta">' +
+          '<div class="lang-drill-progress-bar"><div class="lang-drill-progress-fill" style="width:' + pct + '%;"></div></div>' +
+          '<span class="lang-drill-count">' + toFa(count) + ' از ' + toFa(target) + ' امروز' + (done ? ' ✅' : '') + '</span>' +
+        '</div>' +
+        '<div class="lang-drill-actions">' +
+          '<button class="lang-drill-go">' + (done ? 'دوباره تمرین کن' : 'تمرین کن') + '</button>' +
+          '<button class="lang-drill-del" title="حذف">🗑️</button>' +
+        '</div>';
+      row.querySelector(".lang-drill-go").addEventListener("click", function () {
+        currentDrillSession = d;
+        renderDrillSession();
+      });
+      row.querySelector(".lang-drill-del").addEventListener("click", function () {
+        window.bjConfirm("این تمرین حذف بشه؟", function () {
+          drills = drills.filter(function (x) { return x.id !== d.id; });
+          if (currentDrillSession && currentDrillSession.id === d.id) currentDrillSession = null;
+          saveDrills(function () { renderDrillList(); renderDrillSession(); });
+        });
+      });
+      box.appendChild(row);
+    });
+  }
+
+  function renderDrillSession() {
+    var card = document.getElementById("lang-drill-session-card");
+    var box = document.getElementById("lang-drill-session-box");
+    var titleEl = document.getElementById("lang-drill-session-title");
+    if (!card || !box || !titleEl) return;
+    if (!currentDrillSession) { card.style.display = "none"; box.innerHTML = ""; return; }
+    var drill = currentDrillSession;
+    var today = todayStr();
+    var count = (drill.log && drill.log[today]) || 0;
+    var target = drill.target || 1;
+    var done = count >= target;
+    card.style.display = "block";
+    titleEl.textContent = done ? "✍️ تمرین — امروز کارت با این متن تمومه ✅" : "✍️ تمرین";
+    var lineCount = (drill.text.match(/\n/g) || []).length + 1;
+    var rows = Math.max(2, Math.min(6, lineCount));
+    box.innerHTML =
+      '<div class="lang-drill-target">' + drill.text.replace(/</g, "&lt;").replace(/\n/g, "<br>") + '</div>' +
+      '<div class="lang-review-prompt" style="margin-bottom:8px;">بار ' + toFa(Math.min(count + (done ? 0 : 1), target)) + ' از ' + toFa(target) +
+        (done ? ' — می‌تونی بازم اضافه‌تر تمرین کنی' : '') + '</div>' +
+      '<textarea id="lang-drill-answer-input" dir="auto" rows="' + rows + '" class="lang-answer-input" style="text-align:right; height:auto;" placeholder="همینو دقیقاً اینجا بنویس..." autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>' +
+      '<div id="lang-drill-session-result" style="display:none;"></div>' +
+      '<div class="lang-review-actions">' +
+      '<button id="lang-drill-check-btn" class="lang-btn" style="flex:1;">بررسی</button>' +
+      '<button id="lang-drill-close-btn" class="lang-btn-ghost" style="flex-shrink:0;">بستن</button>' +
+      '</div>';
+
+    document.getElementById("lang-drill-close-btn").addEventListener("click", function () {
+      currentDrillSession = null;
+      renderDrillSession();
+    });
+    var input = document.getElementById("lang-drill-answer-input");
+    var checkBtn = document.getElementById("lang-drill-check-btn");
+    function doDrillCheck() {
+      var typed = normalizeDrillText(input.value);
+      var expected = normalizeDrillText(drill.text);
+      var resultBox = document.getElementById("lang-drill-session-result");
+      if (typed && typed === expected) {
+        drill.log = drill.log || {};
+        drill.log[today] = (drill.log[today] || 0) + 1;
+        saveDrills(function () {
+          renderDrillList();
+          renderDrillSession();
+        });
+      } else {
+        resultBox.style.display = "block";
+        resultBox.innerHTML = '<div class="lang-review-wrong">❌ دقیقاً مطابق متن نبود، دوباره امتحان کن</div>';
+      }
+    }
+    checkBtn.addEventListener("click", doDrillCheck);
+    input.focus();
   }
 
   function normalizeAnswer(s) { return (s || "").trim().toLowerCase(); }
@@ -733,6 +851,55 @@
     saveWords(function () { renderAll(); });
   });
 
+  var drillAddBtn = document.getElementById("lang-drill-add-btn");
+  if (drillAddBtn) {
+    drillAddBtn.addEventListener("click", function () {
+      var textInput = document.getElementById("lang-drill-text-input");
+      var countInput = document.getElementById("lang-drill-count-input");
+      var text = (textInput.value || "").trim();
+      if (!text) return;
+      var targetCount = parseInt(countInput.value, 10);
+      if (!targetCount || targetCount < 1) targetCount = 1;
+      drills.push({ id: uid(), text: text, target: targetCount, log: {} });
+      textInput.value = "";
+      countInput.value = "5";
+      saveDrills(function () { renderDrillList(); });
+    });
+  }
+
+  // ---- دفترچه‌ی یادداشت آزاد: ذخیره‌ی خودکار با یه تاخیر کوتاه بعد از تایپ ----
+  var freenoteInput = document.getElementById("lang-freenote-input");
+  if (freenoteInput) {
+    freenoteInput.addEventListener("input", function () {
+      freenoteText = freenoteInput.value;
+      var savedEl = document.getElementById("lang-freenote-saved");
+      if (savedEl) savedEl.textContent = "در حال ذخیره…";
+      if (freenoteSaveTimer) clearTimeout(freenoteSaveTimer);
+      freenoteSaveTimer = setTimeout(function () {
+        saveFreenote(function () {
+          if (savedEl) savedEl.textContent = "ذخیره شد ✓";
+        });
+      }, 500);
+    });
+  }
+
+  // ---- collapse/expand برای کارت‌های تب «تمرین» ----
+  [
+    ["lang-drill-add-header", "lang-drill-add-content", "lang-drill-add-arrow"],
+    ["lang-drill-list-header", "lang-drill-list-content", "lang-drill-list-arrow"],
+    ["lang-freenote-header", "lang-freenote-content", "lang-freenote-arrow"]
+  ].forEach(function (ids) {
+    var header = document.getElementById(ids[0]);
+    var contentEl = document.getElementById(ids[1]);
+    var arrowEl = document.getElementById(ids[2]);
+    if (!header || !contentEl || !arrowEl) return;
+    header.addEventListener("click", function () {
+      var isOpen = contentEl.style.display !== "none";
+      contentEl.style.display = isOpen ? "none" : "block";
+      arrowEl.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+    });
+  });
+
   function renderAll() {
     renderStats();
     renderDirRow();
@@ -740,6 +907,8 @@
     renderWordList();
     renderIntervalsList();
     renderNoteList();
+    renderDrillList();
+    renderDrillSession();
   }
 
   function openPanel() {
@@ -748,6 +917,13 @@
     loadDirection(function (v) { reviewDirection = v; renderDirRow(); });
     loadAllMode(function (v) { allMeaningsMode = v; allModeToggle.checked = v; renderDirRow(); });
     loadIntervals(function (iv) { INTERVALS = iv; loadWords(function (w) { words = w; loadNotes(function (nt) { notes = nt; renderAll(); }); }); });
+    loadDrills(function (dr) { drills = dr; renderDrillList(); renderDrillSession(); });
+    loadFreenote(function (ft) {
+      freenoteText = ft;
+      var savedEl = document.getElementById("lang-freenote-saved");
+      if (freenoteInput) freenoteInput.value = ft;
+      if (savedEl) savedEl.textContent = "";
+    });
   }
   function closePanel() { overlay.classList.remove("open"); panel.classList.remove("open"); }
   fab.addEventListener("click", openPanel);

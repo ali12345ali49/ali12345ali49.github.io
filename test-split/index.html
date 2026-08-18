@@ -6224,6 +6224,19 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
   .lang-dt-ginput { width: 100%; background: var(--bg2); border: 1px solid var(--border); color: var(--text);
     border-radius: 8px; padding: 8px; font-size: 12px; font-family: inherit; margin-bottom: 6px; }
   .lang-dt-preview { font-size: 10.5px; color: var(--muted); text-align: center; margin-bottom: 4px; }
+
+  .lang-drill-row { background: var(--bg2); border: 1px solid var(--border); border-radius: 9px; padding: 9px 10px; font-size: 12px; margin-bottom: 8px; }
+  .lang-drill-row .lang-drill-text { color: var(--text); word-break: break-word; margin-bottom: 6px; line-height: 1.7; }
+  .lang-drill-row .lang-drill-meta { display: flex; align-items: center; gap: 8px; }
+  .lang-drill-row .lang-drill-progress-bar { flex: 1; height: 6px; border-radius: 4px; background: var(--bg3); overflow: hidden; }
+  .lang-drill-row .lang-drill-progress-fill { height: 100%; background: #4F8DE5; border-radius: 4px; transition: width .25s ease; }
+  .lang-drill-row .lang-drill-count { font-size: 10.5px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .lang-drill-row .lang-drill-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .lang-drill-row .lang-drill-actions button { flex-shrink: 0; font-family: inherit; cursor: pointer; border-radius: 8px; font-size: 11px; font-weight: 700; padding: 6px 10px; }
+  .lang-drill-row .lang-drill-go { flex: 1; background: rgba(79,141,229,0.15); border: 1px solid #4F8DE5; color: #4F8DE5; }
+  .lang-drill-row .lang-drill-go[disabled] { opacity: .55; cursor: default; }
+  .lang-drill-row .lang-drill-del { background: none; border: none; color: var(--muted); font-size: 13px; padding: 6px 8px; }
+  .lang-drill-target { font-size: 15px; color: var(--text); text-align: center; padding: 14px 8px; line-height: 1.8; word-break: break-word; background: var(--bg2); border-radius: 10px; margin-bottom: 10px; }
   #lang-panel .lang-panel-body::-webkit-scrollbar { width: 0; height: 0; }
 
   body.bj-icon-line #lang-fab, body.bj-icon-line-theme #lang-fab, body.bj-icon-soft #lang-fab, body.bj-icon-duotone #lang-fab { padding: 0; }
@@ -6261,6 +6274,10 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
     <button type="button" class="lang-tab" data-langtab="words">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       واژه‌ها
+    </button>
+    <button type="button" class="lang-tab" data-langtab="practice">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      تمرین
     </button>
     <button type="button" class="lang-tab" data-langtab="notes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M12 2a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 2Z"/></svg>
@@ -6364,7 +6381,42 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
       </div>
     </div>
 
-    <!-- یادداشت: یادداشت‌ها و اهداف -->
+    <!-- تمرین: نوشتن تکراری روزانه‌ی یک متن یا واژه -->
+    <div class="lang-tabview" id="lang-view-practice">
+      <div class="lang-tip-strip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:2px; color:#4F8DE5;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <p>هر متنی رو که می‌خوای تمرین کنی اینجا بذار — می‌تونه یه واژه، یه جمله، یا یه قاعده‌ی گرامری باشه. مشخص کن روزی چند بار می‌خوای بنویسیش، بعد هر بار که تمرینش می‌کنی باید عیناً همون رو تایپ کنی. شمارشش هر روز از نو صفر می‌شه.</p>
+      </div>
+      <div class="lang-card">
+        <button type="button" id="lang-drill-add-header" class="lang-drawer-summary" style="padding:0; margin-bottom:10px;">
+          <h3 style="margin:0;">➕ افزودن تمرین نوشتاری جدید</h3>
+          <span id="lang-drill-add-arrow" class="lang-drawer-chev" style="transform:rotate(180deg);">▾</span>
+        </button>
+        <div id="lang-drill-add-content" style="display:block;">
+          <textarea id="lang-drill-text-input" rows="2" placeholder="متن یا واژه‌ای که می‌خوای تکرار کنی…"></textarea>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+            <span style="font-size:11.5px; color:var(--muted); flex-shrink:0;">روزی چند بار:</span>
+            <input type="number" min="1" id="lang-drill-count-input" value="5" style="margin-bottom:0;">
+          </div>
+          <button class="lang-btn" id="lang-drill-add-btn">افزودن به تمرین‌های روزانه</button>
+        </div>
+      </div>
+      <div class="lang-card">
+        <button type="button" id="lang-drill-list-header" class="lang-drawer-summary" style="padding:0; margin-bottom:10px;">
+          <h3 style="margin:0;">📋 تمرین‌های من</h3>
+          <span id="lang-drill-list-arrow" class="lang-drawer-chev" style="transform:rotate(180deg);">▾</span>
+        </button>
+        <div id="lang-drill-list-content" style="display:block;">
+          <div id="lang-drill-list"><div class="lang-empty">هنوز تمرین نوشتاری اضافه نکردی.</div></div>
+        </div>
+      </div>
+      <div id="lang-drill-session-card" class="lang-card" style="display:none; border-color:#4F8DE5;">
+        <h3 id="lang-drill-session-title">✍️ تمرین</h3>
+        <div id="lang-drill-session-box"></div>
+      </div>
+    </div>
+
+    <!-- یادداشت: یادداشت‌ها و اهداف + دفترچه‌ی آزاد -->
     <div class="lang-tabview" id="lang-view-notes">
       <div class="lang-card">
         <button type="button" id="lang-notes-header" class="lang-drawer-summary" style="padding:0; margin-bottom:10px;">
@@ -6378,6 +6430,17 @@ window.bjApplyCustomDayNight = function (bgHex, textHex) {
             <button id="lang-note-add-btn">+ افزودن</button>
           </div>
           <div id="lang-note-list"><div class="lang-empty">هنوز یادداشتی اضافه نکردی.</div></div>
+        </div>
+      </div>
+      <div class="lang-card">
+        <button type="button" id="lang-freenote-header" class="lang-drawer-summary" style="padding:0; margin-bottom:10px;">
+          <h3 style="margin:0;">📖 دفترچه‌ی یادداشت آزاد</h3>
+          <span id="lang-freenote-arrow" class="lang-drawer-chev" style="transform:rotate(180deg);">▾</span>
+        </button>
+        <div id="lang-freenote-content" style="display:block;">
+          <div class="lang-hint">هر چیزی که خواستی همین‌جا بنویس — نکته‌های گرامری، جمله‌های نامفهوم، اصطلاح‌ها، یا هر متن دیگه‌ای. خودش ذخیره می‌شه.</div>
+          <textarea id="lang-freenote-input" rows="8" placeholder="مثلاً: قاعده‌ی present perfect؛ فرق used to و would؛ ..."></textarea>
+          <div id="lang-freenote-saved" style="font-size:10.5px; color:var(--muted); text-align:center;"></div>
         </div>
       </div>
     </div>
