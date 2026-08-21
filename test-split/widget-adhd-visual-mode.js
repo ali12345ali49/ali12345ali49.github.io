@@ -153,6 +153,21 @@
 
   function saveTimerState(state) {
     try { localStorage.setItem(LS_TIMER_STATE, state ? JSON.stringify(state) : ""); } catch (e) {}
+    // آلارم واقعی سیستم‌عامل (پشتیبان setInterval، برای وقتی اپ بسته/پس‌زمینه‌ست)
+    try {
+      window.cancelRealAlarm && window.cancelRealAlarm("adhd-pomodoro-warn");
+      window.cancelRealAlarm && window.cancelRealAlarm("adhd-pomodoro-end");
+      if (state && window.scheduleRealAlarm) {
+        if (state.phase === "work") {
+          if (!state.warned) {
+            window.scheduleRealAlarm("adhd-pomodoro-warn", "۵ دقیقه مونده", "۵ دقیقه دیگه وقت این بخش تموم می‌شه، برای تغییر آماده شو.", state.endsAt - 5 * 60000);
+          }
+          window.scheduleRealAlarm("adhd-pomodoro-end", "زمان تموم شد", "وقت استراحته.", state.endsAt);
+        } else {
+          window.scheduleRealAlarm("adhd-pomodoro-end", "استراحت تموم شد", "برای شروع دوباره، تایمر رو بزن.", state.endsAt);
+        }
+      }
+    } catch (e) {}
   }
   function loadTimerState() {
     try { var raw = localStorage.getItem(LS_TIMER_STATE); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
@@ -201,6 +216,7 @@
   }
   document.getElementById("adhd-timer-start").addEventListener("click", function () {
     try { if (window.Notification && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
+    try { window.requestRealAlarmPermission && window.requestRealAlarmPermission(); } catch (e) {}
     var st = { endsAt: Date.now() + chosenW * 60000, phase: "work", workMin: chosenW, breakMin: chosenB, warned: false };
     saveTimerState(st);
     startTicking();

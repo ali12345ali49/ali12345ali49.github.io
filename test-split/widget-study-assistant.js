@@ -571,6 +571,22 @@
   }
   function requestNotifyPermission() {
     try { if (window.Notification && Notification.permission === "default") Notification.requestPermission(); } catch (e) {}
+    try { window.requestRealAlarmPermission && window.requestRealAlarmPermission(); } catch (e) {}
+  }
+  // آلارم واقعی سیستم‌عامل برای همه‌ی مرورهای دوره‌ایِ هنوز سررسیدنشده (پشتیبان
+  // برای وقتی اپ بسته/پس‌زمینه‌ست). صدا زدنش بی‌خطره و می‌شه چندبار تکرار زد،
+  // چون هر آلارم با همون آی‌دی دوباره‌نویسی می‌شه.
+  function scheduleReviewRealAlarms() {
+    if (!window.scheduleRealAlarm) return;
+    var now = Date.now();
+    subjects.forEach(function (s) {
+      s.reviews.forEach(function (r) {
+        if (r.done) return;
+        var dt = reviewDateTime(s, r);
+        if (dt.getTime() <= now) return;
+        window.scheduleRealAlarm("sdw-review-" + s.id + "-" + r.days, "⏰ وقت مرور رسید", s.name + " — وقتشه دوباره مرورش کنی.", dt);
+      });
+    });
   }
   function addSubject(name, hh, mm, baseDate) {
     var reviews = FORGET_INTERVALS.map(function (d) { return { days: d, done: false, notified: false }; });
@@ -580,6 +596,7 @@
       createdAt: toISODateStr(baseDate || new Date()),
       reviews: reviews
     });
+    scheduleReviewRealAlarms();
     return saveSubjects();
   }
   function addExtraReview(id, days) {
@@ -740,6 +757,7 @@
   }
   function checkDueReviews() {
     var now = new Date(), changed = false;
+    scheduleReviewRealAlarms();
     subjects.forEach(function (s) {
       s.reviews.forEach(function (r) {
         if (!r.done && !r.notified && reviewDateTime(s, r) <= now) {
@@ -1095,6 +1113,25 @@
       if (window.Notification && Notification.permission === "granted") new Notification(title, { body: body, tag: "sdw-pomodoro" });
     } catch (e) {}
   }
+  // آلارم واقعی سیستم‌عامل برای پایان فاز فعلی پومودورو (کار یا استراحت)، برای
+  // وقتی اپ بسته یا صفحه خاموشه. با هر بار صدا زدن، آلارم قبلی جایگزین می‌شه.
+  function sdwScheduleRealAlarm() {
+    try {
+      window.cancelRealAlarm && window.cancelRealAlarm("sdw-pomodoro");
+      if (!window.scheduleRealAlarm || !state.running) return;
+      var endsAt = Date.now() + state.remaining * 1000;
+      var title, body;
+      if (state.phase === "work") {
+        var isLong = (state.cyclesDone + 1) % settings.longEvery === 0;
+        title = "⏰ پومودورو تموم شد!";
+        body = "وقت " + (isLong ? "استراحت بلند" : "استراحت کوتاه") + " رسید — یه نفس بکش.";
+      } else {
+        title = "⏰ استراحت تموم شد";
+        body = "وقت شروع پومودورو بعدیه.";
+      }
+      window.scheduleRealAlarm("sdw-pomodoro", title, body, endsAt);
+    } catch (e) {}
+  }
   function tick() {
     if (tickEnabled) playTick();
     if (state.phase === "work") state.unsavedWorkSeconds++;
@@ -1114,6 +1151,7 @@
         state.remaining = settings.work * 60;
         sdwAlarm("⏰ استراحت تموم شد", "وقت شروع پومودورو بعدیه.");
       }
+      sdwScheduleRealAlarm();
       renderTips();
     }
     renderTimer();
@@ -1123,12 +1161,15 @@
     if (state.phase === "idle") { state.phase = "work"; state.remaining = settings.work * 60; renderTips(); }
     state.running = true;
     state.timerId = setInterval(tick, 1000);
+    try { window.requestRealAlarmPermission && window.requestRealAlarmPermission(); } catch (e) {}
+    sdwScheduleRealAlarm();
     renderTimer();
   }
   function pauseTimer() {
     state.running = false;
     if (state.timerId) clearInterval(state.timerId);
     state.timerId = null;
+    try { window.cancelRealAlarm && window.cancelRealAlarm("sdw-pomodoro"); } catch (e) {}
     flushUnsaved();
     renderTimer();
   }
